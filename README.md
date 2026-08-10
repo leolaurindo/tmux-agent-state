@@ -1,5 +1,6 @@
 # tmux agent idle
 
+
 Small Pi/OpenCode indicator for tmux window names.
 
 ## Setup
@@ -46,5 +47,5 @@ Use the theme's current-window style with a small tweak:
 set -g @agent_highlight_style "#{E:window-status-current-style},underscore"
 ```
 
-Other useful tweaks include `bold`, `reverse`, and `underscore,bold`.
+Other useful tweaks include `bold`, `reverse`, `italics` and `underscore,bold`.
 Use `idle` instead of `running` to highlight waiting agents.
