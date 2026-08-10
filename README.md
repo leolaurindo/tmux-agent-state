@@ -1,4 +1,6 @@
-Pi/OpenCode status indicator for tmux window names.
+# tmux agent idle
+
+Small Pi/OpenCode indicator for tmux window names.
 
 ## Setup
 
@@ -14,19 +16,35 @@ tmux source-file ~/.tmux.conf
 
 Restart Pi and OpenCode.
 
-## Options
+## Customize
 
-Highlight running agents:
+The default only underlines the window name while the agent is running:
 
 ```tmux
-set -g @agent_accent "colour39"
 set -g @agent_highlight_when "running"
+set -g @agent_highlight_style "underscore"
 ```
 
-If you want highlighting when idle:
+Set these after the `source-file` line in `~/.tmux.conf`. The style is applied
+only to the window name; the rest of your theme format is preserved.
+
+Use a hardcoded color:
 
 ```tmux
-set -g @agent_highlight_when "idle"
+set -g @agent_highlight_style "fg=#a9b1d6"
 ```
 
-The indicator is scoped to each tmux window.
+Use a tmux theme color:
+
+```tmux
+set -g @agent_highlight_style "fg=themegreen"
+```
+
+Use the theme's current-window style with a small tweak:
+
+```tmux
+set -g @agent_highlight_style "#{E:window-status-current-style},underscore"
+```
+
+Other useful tweaks include `bold`, `reverse`, and `underscore,bold`.
+Use `idle` instead of `running` to highlight waiting agents.
