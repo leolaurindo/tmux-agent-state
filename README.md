@@ -26,6 +26,8 @@ tmux source-file ~/.tmux.conf
 # restart pi and/or opencode if they were running
 ```
 
+After the setup, configure the style (there's no default, you have to configure as you want).
+
 ## Configure styling
 
 Styles are optional and apply only to window names in which the window contains at least one pi or opencode pane. With multiple agents on the same window, the last event wins. 
