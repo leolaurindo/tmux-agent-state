@@ -8,18 +8,18 @@ It uses window-list styling to distinguish working from idle agents.
 
 ```sh
 mkdir -p ~/.config
-git clone https://github.com/leolaurindo/tmux-agent-status.git ~/.config/tmux-agent-status
-cd ~/.config/tmux-agent-status
+git clone https://github.com/leolaurindo/tmux-agent-state.git ~/.config/tmux-agent-state
+cd ~/.config/tmux-agent-state
 
-printf '\nsource-file %s/tmux/agent-status.conf\n' "$PWD" >> ~/.tmux.conf
+printf '\nsource-file %s/tmux/agent-state.conf\n' "$PWD" >> ~/.tmux.conf
 
 # for pi
 mkdir -p ~/.pi/agent/extensions 
-ln -sfn "$PWD/pi/agent-status.ts" ~/.pi/agent/extensions/agent-status.ts
+ln -sfn "$PWD/pi/agent-state.ts" ~/.pi/agent/extensions/agent-state.ts
 
 # for opencode
 mkdir -p ~/.config/opencode/plugins
-ln -sfn "$PWD/opencode/agent-status.js" ~/.config/opencode/plugins/agent-status.js
+ln -sfn "$PWD/opencode/agent-state.js" ~/.config/opencode/plugins/agent-state.js
 
 
 tmux source-file ~/.tmux.conf
@@ -50,12 +50,12 @@ Set these after the `source-file` line in `~/.tmux.conf`.
 
 ## Uninstall
 
-Remove the `source-file .../tmux/agent-status.conf` line from `~/.tmux.conf`.
+Remove the `source-file .../tmux/agent-state.conf` line from `~/.tmux.conf`.
 
 Remove the pi and/or opencode symlinks:
 
 ```sh
-rm -f ~/.pi/agent/extensions/agent-status.ts
-rm -f ~/.config/opencode/plugins/agent-status.js
+rm -f ~/.pi/agent/extensions/agent-state.ts
+rm -f ~/.config/opencode/plugins/agent-state.js
 tmux source-file ~/.tmux.conf
 ```
