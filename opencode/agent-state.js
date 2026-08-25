@@ -1,15 +1,44 @@
-function setWindowOption($, option, value) {
+function paneTarget() {
   const pane = process.env.TMUX_PANE;
-  if (!process.env.TMUX || !pane) return Promise.resolve();
+  return process.env.TMUX && pane ? pane : null;
+}
+
+function setOption($, scope, option, value) {
+  const pane = paneTarget();
+  if (!pane) return Promise.resolve();
 
   if (value === undefined) {
-    return $`tmux set-option -w -u -t ${pane} ${option}`.quiet().nothrow();
+    return $`tmux set-option ${scope} -u -t ${pane} ${option}`.quiet().nothrow();
   }
-  return $`tmux set-option -w -t ${pane} ${option} ${value}`.quiet().nothrow();
+  return $`tmux set-option ${scope} -t ${pane} ${option} ${value}`.quiet().nothrow();
+}
+
+function setPaneOption($, option, value) {
+  return setOption($, "-p", option, value);
+}
+
+function setWindowOption($, option, value) {
+  return setOption($, "-w", option, value);
+}
+
+async function refreshWindow($) {
+  const pane = paneTarget();
+  if (!pane) return;
+
+  const states = await $`tmux list-panes -t ${pane} -F '#{?@agent_pane,1,0}#{?@agent_running_pane,1,0}'`
+    .quiet()
+    .nothrow()
+    .text();
+  const lines = states.trim().split("\n").filter(Boolean);
+  const hasAgent = lines.some((line) => line[0] === "1");
+  const isRunning = lines.length > 0 && lines.every((line) => line[1] === "1");
+  await setWindowOption($, "@agent_window", hasAgent ? "1" : undefined);
+  await setWindowOption($, "@agent_running", isRunning ? "1" : undefined);
 }
 
 export default async function ({ $ }) {
-  await setWindowOption($, "@agent_window", "1");
+  await setPaneOption($, "@agent_pane", "1");
+  await refreshWindow($);
   let activeSession;
 
   return {
@@ -23,18 +52,22 @@ export default async function ({ $ }) {
 
       if (event.type === "session.status") {
         if (event.properties.status.type === "busy" || event.properties.status.type === "retry") {
-          await setWindowOption($, "@agent_running", "1");
+          await setPaneOption($, "@agent_running_pane", "1");
+          await refreshWindow($);
         } else if (event.properties.status.type === "idle") {
-          await setWindowOption($, "@agent_running");
+          await setPaneOption($, "@agent_running_pane");
+          await refreshWindow($);
         }
       } else if (event.type === "session.idle") {
-        await setWindowOption($, "@agent_running");
+        await setPaneOption($, "@agent_running_pane");
+        await refreshWindow($);
       }
     },
 
     dispose: async () => {
-      await setWindowOption($, "@agent_running");
-      await setWindowOption($, "@agent_window");
+      await setPaneOption($, "@agent_running_pane");
+      await setPaneOption($, "@agent_pane");
+      await refreshWindow($);
     },
   };
 }

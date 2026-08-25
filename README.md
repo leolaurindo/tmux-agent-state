@@ -1,36 +1,43 @@
 A tmux indicator for agent activity.
 
 It uses window-list styling to distinguish working from idle agents.
-- pi: sets or clears `@agent_running` on `agent_start` and `agent_settled`.
-- opencode: sets or clears `@agent_running` on `busy`, `retry` and `idle` session events.
+- pi: reports pane state on `agent_start` and `agent_settled`.
+- opencode: reports pane state on `busy`, `retry` and `idle` session events.
+- hax: uses its tmux BEL completion notification to apply the idle style silently.
 
 ## Setup
 
 ```sh
-mkdir -p ~/.config
-git clone https://github.com/leolaurindo/tmux-agent-state.git ~/.config/tmux-agent-state
-cd ~/.config/tmux-agent-state
+mkdir -p ~/projects ~/.config
+git clone https://github.com/leolaurindo/tmux-agent-state.git ~/projects/tmux-agent-state
+ln -s ~/projects/tmux-agent-state ~/.config/tmux-agent-state
+cd ~/projects/tmux-agent-state
 
-printf '\nsource-file %s/tmux/agent-state.conf\n' "$PWD" >> ~/.tmux.conf
+printf '\nsource-file %s/tmux/agent-state.conf\n' "$HOME/.config/tmux-agent-state" >> ~/.tmux.conf
+
+# optional: for hax
+printf '\nsource-file %s/hax/hax-agent-state.conf\n' "$HOME/.config/tmux-agent-state" >> ~/.tmux.conf
 
 # for pi
 mkdir -p ~/.pi/agent/extensions 
-ln -sfn "$PWD/pi/agent-state.ts" ~/.pi/agent/extensions/agent-state.ts
+ln -sfn "$HOME/.config/tmux-agent-state/pi/agent-state.ts" ~/.pi/agent/extensions/agent-state.ts
 
 # for opencode
 mkdir -p ~/.config/opencode/plugins
-ln -sfn "$PWD/opencode/agent-state.js" ~/.config/opencode/plugins/agent-state.js
+ln -sfn "$HOME/.config/tmux-agent-state/opencode/agent-state.js" ~/.config/opencode/plugins/agent-state.js
 
 
 tmux source-file ~/.tmux.conf
-# restart pi and/or opencode if they were running
+# restart pi, opencode and/or hax if they were running
 ```
 
 After the setup, configure the style (there's no default, you have to configure as you want).
 
 ## Configure styling
 
-Styles are optional and apply only to window names in which the window contains at least one pi or opencode pane. With multiple agents on the same window, the last event wins. 
+Styles are optional and apply only to window names in which the window contains at least one
+configured agent. With multiple agents on the same window, one idle pane makes the whole window
+idle; the window is running only while every agent pane is running.
 
 You can configure styling for running state, idle, or both. They are independent.
 
@@ -50,9 +57,18 @@ set -g @agent_idle_style "#{E:window-status-current-style},underscore,bold,itali
 
 Set these after the `source-file` line in `~/.tmux.conf`.
 
+The hax config keeps tmux bell events enabled for status tracking but sets `bell-action none`, so
+hax completion notifications do not make a sound. Selecting the hax window acknowledges the alert
+and clears its style. The style is triggered only by a bell received from a pane whose foreground
+command is `hax`; other panes' bells do not trigger it.
+
 ## Uninstall
 
 Remove the `source-file .../tmux/agent-state.conf` line from `~/.tmux.conf`.
+Remove the optional `source-file .../hax/hax-agent-state.conf` line too, if enabled.
+
+The repository checkout is kept under `~/projects/tmux-agent-state`; `~/.config/tmux-agent-state`
+is only its runtime symlink.
 
 Remove the pi and/or opencode symlinks:
 
