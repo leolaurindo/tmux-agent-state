@@ -29,9 +29,9 @@ async function refreshWindow($) {
     .quiet()
     .nothrow()
     .text();
-  const lines = states.trim().split("\n").filter(Boolean);
-  const hasAgent = lines.some((line) => line[0] === "1");
-  const isRunning = lines.length > 0 && lines.every((line) => line[1] === "1");
+  const agents = states.trim().split("\n").filter((line) => line[0] === "1");
+  const hasAgent = agents.length > 0;
+  const isRunning = hasAgent && agents.every((line) => line[1] === "1");
   await setWindowOption($, "@agent_window", hasAgent ? "1" : undefined);
   await setWindowOption($, "@agent_running", isRunning ? "1" : undefined);
 }

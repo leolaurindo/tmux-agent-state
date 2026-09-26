@@ -33,9 +33,9 @@ function refreshWindow() {
     "#{?@agent_pane,1,0}#{?@agent_running_pane,1,0}",
   ]);
   if (states === null) return;
-  const lines = states.split("\n").filter(Boolean);
-  const hasAgent = lines.some((line) => line[0] === "1");
-  const isRunning = lines.length > 0 && lines.every((line) => line[1] === "1");
+  const agents = states.split("\n").filter((line) => line[0] === "1");
+  const hasAgent = agents.length > 0;
+  const isRunning = hasAgent && agents.every((line) => line[1] === "1");
   setOption("-w", "@agent_window", hasAgent ? "1" : undefined);
   setOption("-w", "@agent_running", isRunning ? "1" : undefined);
 }
