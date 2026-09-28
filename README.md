@@ -1,8 +1,8 @@
 A tmux indicator for agent activity.
 
 It uses window-list styling to distinguish working from idle agents.
-- pi: reports pane state on `agent_start` and `agent_settled`.
-- opencode: reports pane state on `busy`, `retry` and `idle` session events.
+- pi: reports pane state on `agent_start` and `agent_settled`, plus permission prompts from `pi-permission-system`.
+- opencode: reports pane state on `busy`, `retry` and `idle` session events, and highlights pending permission requests.
 - hax: uses its tmux BEL completion notification to apply the idle style silently.
 
 ## Setup

@@ -44,9 +44,17 @@ function setPaneOption(option: string, value?: string) {
   setOption("-p", option, value);
 }
 
-export default function (pi: { on: (event: string, handler: () => void) => void }) {
+export default function (pi: {
+  on: (event: string, handler: () => void) => void;
+  events: { on: (channel: string, handler: (data: unknown) => void) => () => void };
+}) {
   setPaneOption("@agent_pane", "1");
   refreshWindow();
+  pi.events.on("pi-permission-system:permission-request", (data) => {
+    if (!data || typeof data !== "object" || !("state" in data)) return;
+    setPaneOption("@agent_running_pane", data.state === "waiting" ? undefined : "1");
+    refreshWindow();
+  });
   pi.on("session_start", () => {
     setPaneOption("@agent_pane", "1");
     refreshWindow();

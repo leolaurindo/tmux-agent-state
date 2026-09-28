@@ -61,6 +61,12 @@ export default async function ({ $ }) {
       } else if (event.type === "session.idle") {
         await setPaneOption($, "@agent_running_pane");
         await refreshWindow($);
+      } else if (event.type === "permission.updated") {
+        await setPaneOption($, "@agent_running_pane");
+        await refreshWindow($);
+      } else if (event.type === "permission.replied") {
+        await setPaneOption($, "@agent_running_pane", "1");
+        await refreshWindow($);
       }
     },
 
