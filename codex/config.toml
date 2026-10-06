@@ -1,0 +1,4 @@
+# Merge this setting into the existing [tui] table in ~/.codex/config.toml.
+# Keep spinner/activity: Codex uses it to emit Action Required for questions.
+[tui]
+terminal_title = ["app-name", "status", "spinner", "project"]
