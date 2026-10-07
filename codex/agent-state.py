@@ -4,6 +4,7 @@
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 SPINNERS = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -40,23 +41,34 @@ def refresh_window(pane):
 
 
 def sync(pane):
-    info = tmux("display-message", "-p", "-t", pane,
-                "#{pane_current_command}\t#{pane_tty}\t#{@codex_managed}\t" + STATE_FORMAT)
-    command, tty, managed, state = info.split("\t", 3)
+    info = tmux(
+        "display-message", "-p", "-t", pane,
+        "#{pane_current_command}\t#{pane_tty}\t#{@codex_managed}\t#{@codex_title_known}\t"
+        + STATE_FORMAT + "\t#{pane_title}",
+    )
+    command, tty, managed, title_known, state, title = info.split("\t", 5)
     is_codex = command == "codex"
     if command == "node":
         # The npm launcher is node; confirm the Codex executable on the same tty.
         names = subprocess.check_output(["ps", "-t", tty, "-o", "comm="], text=True).split()
         is_codex = "codex" in names
+    title_has_codex = "codex" in title.lower()
+    recognized = title_has_codex or state != "idle"
+    known = title_known == "1" or recognized
     set_option(pane, "-p", "@codex_title_state", state)
     set_option(pane, "-p", "@codex_command", command)
     if is_codex:
         set_option(pane, "-p", "@codex_managed", "1")
-        set_option(pane, "-p", "@agent_pane", "1")
-        set_option(pane, "-p", "@agent_running_pane", "1" if state == "working" else None)
+        set_option(pane, "-p", "@codex_title_known", "1" if known else None)
+        set_option(pane, "-p", "@codex_title_has_app", "1" if title_has_codex else None)
+        set_option(pane, "-p", "@agent_pane", "1" if known else None)
+        set_option(pane, "-p", "@agent_running_pane", "1" if known and state == "working" else None)
         refresh_window(pane)
     elif managed:
-        for option in ("@codex_managed", "@agent_pane", "@agent_running_pane"):
+        for option in (
+            "@codex_managed", "@codex_title_known", "@codex_title_has_app",
+            "@agent_pane", "@agent_running_pane",
+        ):
             set_option(pane, "-p", option)
         refresh_window(pane)
 
@@ -64,9 +76,14 @@ def sync(pane):
 def install():
     # Target the pane that emitted the title, not the app-server daemon's TMUX_PANE.
     candidate = "#{||:#{m/r:^(codex|node)$,#{pane_current_command}},#{@codex_managed}}"
-    changed = "#{||:#{!=:#{@codex_title_state}," + STATE_FORMAT + "},#{!=:#{@codex_command},#{pane_current_command}}}"
+    title_has_codex = "#{m/r:codex,#{pane_title}}"
+    newly_identified = "#{&&:#{@codex_managed},#{!=:#{@codex_title_known},1}," + title_has_codex + "}"
+    left_codex_title = "#{&&:#{@codex_managed},#{==:#{@codex_title_has_app},1},#{!=:" + title_has_codex + ",1}}"
+    state_changed = "#{!=:#{@codex_title_state}," + STATE_FORMAT + "}"
+    command_changed = "#{!=:#{@codex_command},#{pane_current_command}}"
+    changed = "#{||:" + state_changed + ",#{||:" + command_changed + ",#{||:" + newly_identified + "," + left_codex_title + "}}}"
     condition = "#{&&:" + candidate + "," + changed + "}"
-    command = shlex.join(["python3", str(Path(__file__).resolve())]) + " #{hook_pane}"
+    command = shlex.join(["python3", str(Path(__file__).resolve())]) + " --settle #{hook_pane}"
     hook = "if-shell -F " + shlex.quote(condition) + " " + shlex.quote("run-shell -b " + shlex.quote(command))
     tmux("set-hook", "-g", "pane-title-changed[codex-agent-state]", hook)
     for pane in tmux("list-panes", "-a", "-F", "#{pane_id}").splitlines():
@@ -76,6 +93,14 @@ def install():
 if __name__ == "__main__":
     if sys.argv[1:] == ["--install"]:
         install()
+    elif len(sys.argv) == 3 and sys.argv[1] == "--settle":
+        try:
+            sync(sys.argv[2])
+            time.sleep(0.2)
+            sync(sys.argv[2])
+        except (ValueError, OSError, subprocess.SubprocessError):
+            # A pane can disappear while a title hook is running.
+            pass
     elif len(sys.argv) == 2:
         try:
             sync(sys.argv[1])

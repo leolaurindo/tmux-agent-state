@@ -51,7 +51,15 @@ class AgentStateTest(unittest.TestCase):
         target = pane or self.pane
         self.tmux("send-keys", "-t", target, "-l", text)
         self.tmux("send-keys", "-t", target, "Enter")
+        self.wait_for(lambda: self.tmux("display-message", "-p", "-t", target, "#{pane_title}") == text)
         self.wait_for(lambda: self.option("-p", "@codex_title_state", target) == state)
+
+    def test_unrecognized_startup_title_waits_for_codex_title(self):
+        self.assertEqual(self.option("-p", "@agent_pane"), "")
+        self.title("codex | Ready project", "idle")
+        self.wait_for(lambda: self.option("-p", "@agent_pane") == "1")
+        self.assertEqual(self.option("-p", "@agent_running_pane"), "")
+        self.assertEqual(self.option("-w", "@agent_window"), "1")
 
     def test_working_idle_and_action_required_from_actual_title_events(self):
         self.title("codex | Working ⠙ project", "working")
@@ -88,6 +96,22 @@ class AgentStateTest(unittest.TestCase):
         self.title("[ ! ] Action Required | codex | project", "waiting")
         self.wait_for(lambda: self.option("-w", "@agent_running") == "")
         self.assertEqual(self.option("-p", "@agent_running_pane", other), "1")
+
+    def test_exit_cleanup_runs_when_title_leaves_codex_without_state_change(self):
+        self.title("codex | Ready project", "idle")
+        self.tmux("select-pane", "-T", "shell", "-t", self.pane)
+        self.tmux("respawn-pane", "-k", "-t", self.pane, "sleep 300")
+        self.wait_for(lambda: self.option("-p", "@codex_managed") == "")
+        self.wait_for(lambda: self.option("-w", "@agent_window") == "")
+
+    def test_exit_title_event_resyncs_after_command_changes(self):
+        self.title("codex | Working ⠙ project", "working")
+        self.title("codex | Ready project", "idle")
+        self.assertEqual(self.option("-p", "@codex_managed"), "1")
+        self.tmux("respawn-pane", "-k", "-t", self.pane, "sleep 300")
+        self.wait_for(lambda: self.option("-p", "@codex_managed") == "")
+        self.wait_for(lambda: self.option("-w", "@agent_window") == "")
+        self.assertEqual(self.option("-p", "@agent_pane"), "")
 
     def test_exit_clears_owned_state_and_cannot_mark_an_unrelated_process(self):
         self.title("codex | Working ⠙ project", "working")

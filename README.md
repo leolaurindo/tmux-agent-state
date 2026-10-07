@@ -57,7 +57,9 @@ terminal_title = ["app-name", "status", "spinner", "project"]
 The activity/spinner item is required: Codex uses it to publish `Action Required`
 when a permission, question, MCP elicitation or other input needs a response.
 New CLI sessions use this configured title. Already-running CLI sessions with
-the standard spinner/thread/project title also work, without a restart.
+the standard spinner/thread/project title also work, without a restart. To avoid
+an idle-style flash during startup, panes with an initially unrecognized idle
+title are tracked only after Codex publishes a recognizable title or state.
 
 | Codex title/state | tmux behavior |
 | --- | --- |
@@ -151,7 +153,8 @@ tmux set-hook -gu 'pane-title-changed[codex-agent-state]'
 ```
 
 For each surviving Codex pane, unset `@agent_pane`, `@agent_running_pane`,
-`@codex_managed`, `@codex_title_state` and `@codex_command` with
+`@codex_managed`, `@codex_title_known`, `@codex_title_has_app`,
+`@codex_title_state` and `@codex_command` with
 `tmux set-option -pu -t <pane-id> <option>`; recalculate the window options if it
 still has pi/opencode agent panes. If the window has no remaining agents, unset
 `@agent_window` and `@agent_running` with `tmux set-option -wu -t <window-id> <option>`.
